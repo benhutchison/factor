@@ -1,9 +1,13 @@
+import ReleaseTransformations._
+import sbt._
+
 lazy val akkaVersion = "2.5.13"
+lazy val theScalaVersion = "2.12.6"
 
 lazy val commonSettings = Seq(
   organization := "com.github.benhutchison",
-  version := "0.1",
-  scalaVersion := "2.12.6",
+  scalaVersion := theScalaVersion,
+  scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions", "-language:higherKinds"),
 )
 
 lazy val root = (project in file("."))
@@ -15,7 +19,27 @@ lazy val root = (project in file("."))
       "org.typelevel" %% "cats-effect" % "1.0.0-RC2",
       "org.typelevel" %% "mouse" % "0.17",
     ),
-    name := "factor"
+    name := "factor",
+    crossScalaVersions := Seq(theScalaVersion),
+    publishMavenStyle := true,
+    licenses += ("The Apache Software License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+    homepage := Some(url("https://github.com/benhutchison/factor")),
+    developers := List(Developer("benhutchison", "Ben Hutchison", "brhutchison@gmail.com", url = url("https://github.com/benhutchison"))),
+    scmInfo := Some(ScmInfo(url("https://github.com/benhutchison/factor"), "scm:git:https://github.com/benhutchison/factor.git")),
+    releaseCrossBuild := true,
+    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishArtifacts,
+      setNextVersion,
+      commitNextVersion,
+    ),
   )
 
 lazy val example = (project in file("example"))
@@ -29,7 +53,8 @@ lazy val example = (project in file("example"))
       "org.typelevel" %% "mouse" % "0.17",
       "org.specs2" %% "specs2-core" % "4.2.0" % "test",
     ),
-    name := "sausagefactory"
+    name := "sausagefactory",
+    publish / skip := true,
   )
 
 lazy val integrationTest = (project in file("integrationTest"))
@@ -43,5 +68,13 @@ lazy val integrationTest = (project in file("integrationTest"))
       "org.typelevel" %% "cats-effect" % "1.0.0-RC2",
       "org.typelevel" %% "mouse" % "0.17",
     ),
-    name := "integrationTest"
+    name := "integrationTest",
+    publish / skip := true,
   )
+
+ThisBuild / publishTo := Some(
+  if (isSnapshot.value)
+    Opts.resolver.sonatypeSnapshots
+  else
+    Opts.resolver.sonatypeStaging
+)

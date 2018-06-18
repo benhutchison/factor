@@ -2,7 +2,7 @@
 
 
 Factor is an experimental Scala API layer built on top of
-[Akka](https://doc.akka.io/docs/akka/2.5/guide/introduction.html) and (Cats Effect)[https://typelevel.org/cats-effect/]
+[Akka](https://doc.akka.io/docs/akka/2.5/guide/introduction.html) and [Cats Effect](https://typelevel.org/cats-effect/)
 that offers a significantly different programming model to classic actors.
 
 Instead of sending a *message* to an actor who then interpret it, a _Factor_ ("functional actor") is sent an effectful
@@ -50,9 +50,7 @@ and return a response to the caller wrapped in [`cats.effect.IO`](https://typele
 
 ```scala
 trait FactorRef {
-
   def run[A](f: (E, S) => IO[(S, A)])(implicit timeout: FiniteDuration): IO[A]
-
 }
 ```
 
@@ -109,6 +107,12 @@ val ref: FactorRef[E, S] = system.findFactor[E, S](
     )
 ```
 
+#### Running a Computation
+
+Factor inherits `IO`s deferred execution behavior. That is, the structure of a computation is declared, and then it is
+triggered, typically once at the "end of the world" (ie program), using eg `runUnsafeSync`. See the
+[example code](./example/src/main/scala/factor/example/SausageFactoryExample.scala) for an sample.
+
 #### Termination
 
 Factors persist until they are stopped. `stop` on `FactorRef` will stop a Factor, while `terminate` on `FactorSystem` will
@@ -132,7 +136,6 @@ Another operation in the factor API exists to support orchestrating asynchronous
 
 ```scala
 case class FactorSystem {
-
   def runAsync[A](f: ()=>IO[A], address: SystemAddress)(implicit timeout: FiniteDuration): IO[A]
 }
 ```
