@@ -223,7 +223,6 @@ publish a stable version.
 
 Features I am planning or considering adding to Factor:
 
-* Travis CI
 * Machine checked docs
 * Kryo as the default serialization mechanism
 * Asbtract away from IO to the Cats Effect typeclasses
