@@ -1,5 +1,7 @@
 ## Factor: An experiment in Functional Actors
 
+[![Build Status](https://travis-ci.org/benhutchison/factor.svg?branch=master)](https://travis-ci.org/benhutchison/factor)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.benhutchison/factor_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.benhutchison/factor_2.12)
 
 Factor is an experimental Scala API layer built on top of
 [Akka](https://doc.akka.io/docs/akka/2.5/guide/introduction.html) and [Cats Effect](https://typelevel.org/cats-effect/)

@@ -11,7 +11,7 @@ jdk:
 
 script:
   - sbt example/test
-  - sbt "integrationTest/multi-jvm:run factor.integrationtest.SausageFactory"
+  - sudo sbt "integrationTest/multi-jvm:run factor.integrationtest.SausageFactory"
 
 cache:
   directories:
