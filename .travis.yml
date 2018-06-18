@@ -8,7 +8,7 @@ jdk:
 
 script:
   - sbt example/test
-  - sbt integrationTest/multi-jvm:run factor.integrationtest.SausageFactory
+  - sbt "integrationTest/multi-jvm:run factor.integrationtest.SausageFactory"
 
 cache:
   directories:
