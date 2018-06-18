@@ -45,8 +45,9 @@ A *Factor* is an active, potentially remote container for some state `S` and an 
 factor is updated, and a reply is sent back.
 
 Factors are not accessed directly, but via a `FactorRef[E, S]` which are serializable, remote handles to a Factor. The
-fundamental operation they provide is to asynchronously run an effectful (ie potentially side-effecting) function inside the actor,
-and return a response to the caller wrapped in [`cats.effect.IO`](https://typelevel.org/cats-effect/datatypes/io.html):
+fundamental operation they provide is to asynchronously run an effectful (ie potentially side-effecting) function inside
+the actor, and return a response to the caller wrapped in
+[`cats.effect.IO`](https://typelevel.org/cats-effect/datatypes/io.html):
 
 ```scala
 trait FactorRef {
@@ -96,9 +97,9 @@ val ref: FactorRef[E, S] = system.createFactor[E, S](
 
 The recommendation is to create a factor ref and then pass it to any processes that need to interact with the Factor.
 
-However, if you need obtain a ref to a Factor you somehow know exists, but didn't create, you can use `findFactor`. Be warned that
-this lookup will not verify the types `E` and `S` you specify actually match those of the looked-up Factor (think of them
-as an assertion you make using some external knowledge):
+However, if you need obtain a ref to a Factor you somehow know exists, but didn't create, you can use `findFactor`. Be
+warned that this lookup will not verify the types `E` and `S` you specify actually match those of the looked-up Factor
+(think of them as an assertion you make using some external knowledge):
 
 ```scala
 val ref: FactorRef[E, S] = system.findFactor[E, S](
@@ -123,8 +124,8 @@ terminate the whole system on that machine including all Factors.
 A key aim of the Factor model is to allow a distributed actor system to be coordinated like a chain of local asynchronous
 `Futures`, `IO`s or `Task`s, by using monadic flatMap/binds to sequence steps in a multi-part computation.
 
-`IO` also provides good support for running parallel computations. For example, you can dispatch two calls to two factors concurrently
-using `IO.parTraverse(f1, f2)` and continue when the results from each are back.
+`IO` also provides good support for running parallel computations. For example, you can dispatch two calls to two
+factors concurrently using `IO.parTraverse(f1, f2)` and continue when the results from each are back.
 
 Keep in mind that calls to a Factor can be effectful, so they can read or write to databases, message queues, the cloud,
 etc as well as manipulating the `Factor` state. Sometimes the goal of a call is to cause effects, and the Factor state
@@ -170,18 +171,17 @@ Java, and the need for encapsulation had been drummed into me for years. I disti
 when I first studied Haskell, that idiomatic Haskell programming style chose exposed- over encapsulated- data, and
 what's more, they seemed to get along just fine!
 
-So what are the trade offs? When we encapsulate, we protect ourselves against the unstable
-or untrusted outside world. But this comes at the cost of maintaining a hidden internal state, plus an exterior API, and
-a means of translating messages into state changes and back again. And this is a good approach when the outside world is unstable
-or untrusted.
+So what are the trade offs? When we encapsulate, we protect ourselves against the unstable or untrusted outside world.
+But this comes at the cost of maintaining a hidden internal state, plus an exterior API, and a means of translating
+messages into state changes and back again. And this is a good approach when the outside world is unstable or untrusted.
 
-But in many scenarios, we control the actors environment ourselves. We have a system composed of many actors that we have fashioned
-to work together. Just as we normally wouldn't keep the interior doors in our house locked, erecting walls inside our system
-just adds overhead and complexity we don't want or need, .
+But in many scenarios, we control the actor's environment ourselves. We have a system composed of many actors that we
+have fashioned to work together. Just as we normally wouldn't keep the interior doors in our house locked, erecting
+walls inside our system just adds overhead and complexity we don't want or need.
 
-When you have a coherent system that needs to include distribution and concurrency, Factor can let your express your system's behavior
-more clearly and concisely. You can write all your code in one place, declaratively describe which parts should execute where,
-and you'll typically expend less effort on packaging and distribution overheads.
+When you have a coherent system that needs to include distribution and concurrency, Factor can let your express your
+system's behavior more clearly and concisely. You can write all your code in one place, declaratively describe which
+parts should execute where, and you'll typically expend less effort on packaging and distribution overheads.
 
 ### Serialization
 

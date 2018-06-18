@@ -1,0 +1,16 @@
+language: scala
+scala:
+   - 2.12.6
+
+jdk:
+ - oraclejdk8
+ - openjdk9
+
+script:
+  - sbt example/test
+  - sbt integrationTest/multi-jvm:run factor.integrationtest.SausageFactory
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
