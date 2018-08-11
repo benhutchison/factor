@@ -16,7 +16,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-remote" % akkaVersion,
-      "org.typelevel" %% "cats-effect" % "0.10.1",
+      "org.typelevel" %% "cats-effect" % "1.0.0-RC2",
       "org.typelevel" %% "mouse" % "0.17",
     ),
     name := "factor",
@@ -49,9 +49,6 @@ lazy val example = (project in file("example"))
     libraryDependencies ++= Seq(
       "com.github.julien-truffaut" %%  "monocle-core"  % "1.5.0",
       "com.github.julien-truffaut" %%  "monocle-macro" % "1.5.0",
-      //temporary awkward: reverted factor core to cats effect 0.10.1 for compat with http4s,
-      //but we use later features here and not http4s
-      "org.typelevel" %% "cats-effect" % "1.0.0-RC2",
       "org.typelevel" %% "mouse" % "0.17",
       "org.specs2" %% "specs2-core" % "4.2.0" % "test",
     ),
