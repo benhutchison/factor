@@ -6,13 +6,13 @@ import akka.actor.Status._
 import akka.pattern.ask
 import akka.util._
 import com.typesafe.config._
-
 import cats.implicits._
 import cats.effect._
 import mouse.all._
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 /** A "Factor" (functional-actor) is a potentially remote Akka actor that stores two kinds
   * of internal data:
@@ -22,8 +22,8 @@ import scala.concurrent.duration._
   *
   * And has exactly one behavior:
   * - When sent a Function2 instance (aka lambda, closure), it invokes passed the function passing it E and S. It requires
-  * the function to return a tuple `(S, A)`, being the new state `S` and the reply `A` The reply is then sent as a message to
-  * the sender.
+  * the function to return a `Product2[S, A]`, being the new state `S` and the reply `A`. Product2 generalizes 2-tuples and
+  * 2-field case classes in Scala. The reply is then sent as a message to the sender.
   *
   * If an exception or timeout occurs during invocation, the state is not updated, and the sender is sent a failure message.
   *
@@ -33,18 +33,18 @@ import scala.concurrent.duration._
   * That is, it should act locally over the S and E data only. If remote/async calls are needed, do them before or after
   * accessing the state, from an AsyncActor.
   * */
-class Factor[E, S](env: E, initState: S, timeout: Duration) extends Actor {
+class Factor[E, S](env: E, initState: S, timeout: FiniteDuration) extends Actor {
   var state: S = initState
 
   def receive = {
-    case f: Function2[E, S, IO[(S, Any)] @unchecked] =>
+    case f: Function2[E, S, IO[Product2[S, Any]] @unchecked] =>
       try {
         f(env, state).unsafeRunTimed(timeout) match {
-          case Some((nextState, reply)) =>
+          case Some(Product2(nextState, reply)) =>
             sender() ! reply
             state = nextState
           case None =>
-            sender() ! Failure(new FactorTimeout(s"Actor: ${this.toString}: Timeout after: ${timeout} on: ${f}"))
+            sender() ! Failure(FactorTimeout.timeoutException(this.toString, timeout, f))
         }
       }
       catch {
@@ -68,15 +68,22 @@ class AsyncActor(timeout: FiniteDuration) extends Actor {
   def receive = {
     case f: Function0[IO[Any] @unchecked] =>
       val sendr = sender()
-      f().timeout(timeout).unsafeRunAsync {
-        case Right(a) => sendr ! a
-        case Left(e) => sendr ! Failure(e)
-      }
-      self ! PoisonPill
-    case other =>
 
-      sender() ! Failure(new IllegalArgumentException(s"AsyncActor@${context.system.name}: Unexpected msg: $other"))
+      //TODO change to timeout after cat effect upgrade, drop try/catch
+      try {
+        f().unsafeRunTimed(timeout) match {
+          case Some(a) => sendr ! a
+          case None => sendr ! Failure(FactorTimeout.timeoutException(label, timeout, f))
+        }
+        self ! PoisonPill
+      } catch {
+        case NonFatal(ex) => sendr ! Failure(ex)
+      }
+    case other =>
+      sender() ! Failure(new IllegalArgumentException(s"$label: Unexpected msg: $other"))
   }
+
+  def label = s"AsyncActor@${context.system.name}"
 }
 
 class SystemTerminateActor extends Actor {
@@ -162,7 +169,7 @@ trait FactorRef[E, S] extends Serializable {
 
   /** The fundamental operation that Factor computation is built on: sending a serializable function to a Factor to be run
     * over its environment E and state S, yielding a new state and a reply A. */
-  def run[A](f: (E, S) => IO[(S, A)])(implicit timeout: FiniteDuration): IO[A]
+  def run[A](f: (E, S) => IO[Product2[S, A]])(implicit timeout: FiniteDuration): IO[A]
 
   //derived methods built atop run that perform more limited functions
   def runPure[A](f: (E, S) => (S, A))(implicit timeout: FiniteDuration): IO[A] = run { case (e, s) => IO.pure(f(e, s))}
@@ -179,7 +186,7 @@ trait FactorRef[E, S] extends Serializable {
 
 class FactorRefImpl[E, S](ref: ActorRef) extends FactorRef[E, S] {
 
-  def run[A](f: (E, S) => IO[(S, A)])(implicit timeout: FiniteDuration): IO[A] = {
+  def run[A](f: (E, S) => IO[Product2[S, A]])(implicit timeout: FiniteDuration): IO[A] = {
     IO.fromFuture(IO(ref.ask(f)(new Timeout(timeout)).asInstanceOf[Future[A]]))
   }
 
@@ -211,9 +218,9 @@ object FactorSystem {
 case class TestFactor[E, S](env: E, initState: S) extends FactorRef[E, S] {
   var state: S = initState
 
-  def run[A](f: (E, S) => IO[(S, A)])(implicit timeout: FiniteDuration): IO[A] =
+  def run[A](f: (E, S) => IO[Product2[S, A]])(implicit timeout: FiniteDuration): IO[A] =
     f(env, state).map {
-      case (s, a) =>
+      case Product2(s, a) =>
         state = s
         a
     }
@@ -222,6 +229,11 @@ case class TestFactor[E, S](env: E, initState: S) extends FactorRef[E, S] {
 }
 
 class FactorTimeout(msg: String) extends RuntimeException(msg)
+object FactorTimeout {
+
+  def timeoutException(actorLabel: String, timeout: FiniteDuration, f: Any) =
+    new FactorTimeout(s"Actor: ${actorLabel}: Timeout after: ${timeout} on: ${f}")
+}
 
 object ValidRegex {
   val IpAddress = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$".r
