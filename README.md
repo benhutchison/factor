@@ -20,7 +20,7 @@ Factor reuses the quality engineering of Akka to power its distribution mechanis
 ### SBT Coordinates
 
 ```
-"com.github.benhutchison" %% "factor" % "0.1"
+"com.github.benhutchison" %% "factor" % "0.3"
 ```
 Factor is published for Scala 2.12.
 
